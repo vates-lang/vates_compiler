@@ -1,4 +1,6 @@
 import gleam/list
+import gleam/string
+import splitter
 
 pub type ParsedToken {
   ParsedToken(token: Token, offset: Int)
@@ -76,7 +78,25 @@ fn consume(lexer: Lexer) -> #(Lexer, ParsedToken) {
     "+" <> source -> token(lexer, Plus, source, 1)
     "-" <> source -> token(lexer, Minus, source, 1)
     "" -> token(lexer, EndOfFile, "", 0)
-    _ -> todo
+    "\"" <> source -> todo as "string parsing not implemented"
+    "0" <> source
+    | "1" <> source
+    | "2" <> source
+    | "3" <> source
+    | "4" <> source
+    | "5" <> source
+    | "6" <> source
+    | "7" <> source
+    | "8" <> source
+    | "9" <> source -> todo as "number parsing not implemented"
+    source ->
+      case
+        splitter.new([" ", "\n", "\r", "\t"])
+        |> splitter.split_before(source)
+      {
+        #(word, source) ->
+          token(lexer, Identifier(word), source, string.length(word))
+      }
   }
 }
 
