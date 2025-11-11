@@ -8,6 +8,8 @@ pub type ParsedToken {
 
 pub type Token {
   Identifier(String)
+  Number(Int)
+  String(String)
 
   // Keywords
   ConstantKeyword
@@ -79,16 +81,16 @@ fn consume(lexer: Lexer) -> #(Lexer, ParsedToken) {
     "-" <> source -> token(lexer, Minus, source, 1)
     "" -> token(lexer, EndOfFile, "", 0)
     "\"" <> source -> todo as "string parsing not implemented"
-    "0" <> source
-    | "1" <> source
-    | "2" <> source
-    | "3" <> source
-    | "4" <> source
-    | "5" <> source
-    | "6" <> source
-    | "7" <> source
-    | "8" <> source
-    | "9" <> source -> todo as "number parsing not implemented"
+    "0" <> rest
+    | "1" <> rest
+    | "2" <> rest
+    | "3" <> rest
+    | "4" <> rest
+    | "5" <> rest
+    | "6" <> rest
+    | "7" <> rest
+    | "8" <> rest
+    | "9" <> rest -> todo as "number parsing not implemented"
     source ->
       case
         splitter.new([" ", "\n", "\r", "\t"])
