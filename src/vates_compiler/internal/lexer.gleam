@@ -1,4 +1,7 @@
+import gleam/float
+import gleam/int
 import gleam/list
+import gleam/result
 import gleam/string
 import splitter
 
@@ -8,12 +11,12 @@ pub type ParsedToken {
 
 pub type Token {
   Identifier(String)
-  Number(Int)
+  Integer(Int)
+  Float(Float)
   String(String)
 
   // Keywords
   ConstantKeyword
-  LetKeyword
   TypeKeyword
   PublicKeyword
   FunctionKeyword
@@ -61,7 +64,6 @@ fn consume(lexer: Lexer) -> #(Lexer, ParsedToken) {
     " " <> source | "\n" <> source | "\r" <> source | "\t" <> source ->
       advance(lexer, source, 1) |> consume
     "const " <> source -> token(lexer, ConstantKeyword, source, 6)
-    "let " <> source -> token(lexer, LetKeyword, source, 4)
     "type " <> source -> token(lexer, TypeKeyword, source, 5)
     "pub " <> source -> token(lexer, PublicKeyword, source, 4)
     "fn " <> source -> token(lexer, FunctionKeyword, source, 3)
@@ -81,16 +83,16 @@ fn consume(lexer: Lexer) -> #(Lexer, ParsedToken) {
     "-" <> source -> token(lexer, Minus, source, 1)
     "" -> token(lexer, EndOfFile, "", 0)
     "\"" <> source -> todo as "string parsing not implemented"
-    "0" <> rest
-    | "1" <> rest
-    | "2" <> rest
-    | "3" <> rest
-    | "4" <> rest
-    | "5" <> rest
-    | "6" <> rest
-    | "7" <> rest
-    | "8" <> rest
-    | "9" <> rest -> todo as "number parsing not implemented"
+    "0" <> _
+    | "1" <> _
+    | "2" <> _
+    | "3" <> _
+    | "4" <> _
+    | "5" <> _
+    | "6" <> _
+    | "7" <> _
+    | "8" <> _
+    | "9" <> _ -> consume_number(lexer)
     source ->
       case
         splitter.new([" ", "\n", "\r", "\t"])
@@ -107,10 +109,60 @@ fn advance(lexer: Lexer, source: String, offset: Int) -> Lexer {
 }
 
 fn token(
-  lexer: Lexer,
-  token: Token,
-  source: String,
-  offset: Int,
+  lexer lexer: Lexer,
+  token token: Token,
+  source source: String,
+  offset offset: Int,
 ) -> #(Lexer, ParsedToken) {
   #(advance(lexer, source, offset), ParsedToken(token:, offset: lexer.offset))
+}
+
+fn consume_number(lexer: Lexer) -> #(Lexer, ParsedToken) {
+  let #(to_parse, rest, offset, is_floating_point) =
+    read_digits("", lexer.source, lexer.offset, False)
+  let assert Ok(parsed_token) =
+    case is_floating_point {
+      True ->
+        float.parse(to_parse)
+        |> result.map(Float)
+      False ->
+        int.parse(to_parse)
+        |> result.map(Integer)
+    }
+    |> result.map(token(lexer:, token: _, source: rest, offset:))
+  parsed_token
+}
+
+fn read_digits(
+  accumulator: String,
+  input: String,
+  offset: Int,
+  is_floating_point: Bool,
+) -> #(String, String, Int, Bool) {
+  case input {
+    "_" <> rest -> read_digits(accumulator, rest, offset + 1, is_floating_point)
+    "0" <> rest ->
+      read_digits(accumulator <> "0", rest, offset + 1, is_floating_point)
+    "1" <> rest ->
+      read_digits(accumulator <> "1", rest, offset + 1, is_floating_point)
+    "2" <> rest ->
+      read_digits(accumulator <> "2", rest, offset + 1, is_floating_point)
+    "3" <> rest ->
+      read_digits(accumulator <> "3", rest, offset + 1, is_floating_point)
+    "4" <> rest ->
+      read_digits(accumulator <> "4", rest, offset + 1, is_floating_point)
+    "5" <> rest ->
+      read_digits(accumulator <> "5", rest, offset + 1, is_floating_point)
+    "6" <> rest ->
+      read_digits(accumulator <> "6", rest, offset + 1, is_floating_point)
+    "7" <> rest ->
+      read_digits(accumulator <> "7", rest, offset + 1, is_floating_point)
+    "8" <> rest ->
+      read_digits(accumulator <> "8", rest, offset + 1, is_floating_point)
+    "9" <> rest ->
+      read_digits(accumulator <> "9", rest, offset + 1, is_floating_point)
+    "." <> rest if !is_floating_point ->
+      read_digits(accumulator <> ".", rest, offset + 1, True)
+    _ -> #(accumulator, input, offset, is_floating_point)
+  }
 }
